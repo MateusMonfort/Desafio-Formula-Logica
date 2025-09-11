@@ -110,7 +110,6 @@ function parse(s) {
       consume(t.type);
       const vars = [];
       
-      // collect variables (IDENT)
       while (peek() && peek().type === "IDENT") {
         vars.push(consume("IDENT").value);
       }
@@ -118,7 +117,6 @@ function parse(s) {
         throw new Error(`Esperado variável após ${qtype === 'forall' ? '∀' : '∃'}`);
       }
       
-      // optional dot
       if (peek() && peek().type === "DOT") consume("DOT");
       
       const sub = parseUnary();
@@ -141,7 +139,6 @@ function parse(s) {
     
     if (t.type === "IDENT") {
       const name = consume("IDENT").value;
-      // predicate with optional args: if next is LPAREN, parse args
       if (peek() && peek().type === "LPAREN") {
         consume("LPAREN");
         const args = [];
@@ -157,7 +154,6 @@ function parse(s) {
         expect("RPAREN");
         return {type:'pred', name: name, args: args};
       }
-      // plain predicate with zero args
       return {type:'pred', name: name, args: []};
     }
     
