@@ -72,4 +72,4 @@ Este projeto é apenas para fins acadêmicos.
 
 ---
 
-Desenvolvido para o desafio de
+Desenvolvido para o desafio de Programação Lógica e Funcional
