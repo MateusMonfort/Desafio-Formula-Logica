@@ -1,15 +1,14 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Transformador FOL — Prenex / CNF / DNF / Cláusal</title>
-<link rel="stylesheet" href="css/styles.css">
-
-<script>
-window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']]}, svg:{fontCache:'global'}};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Transformador FOL — Prenex / CNF / DNF / Cláusal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']]}, svg:{fontCache:'global'}};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
   <h1>Transformador de Fórmulas — Prenex / CNF / DNF / Cláusal</h1>
@@ -17,34 +16,34 @@ window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']]}, svg:{fontCache:'gl
     <div class="left">
       <div class="small">Use os botões para inserir símbolos LaTeX rapidamente</div>
       <div class="symbols">
-        <button onclick="insertSym('\\forall ')">∀</button>
-        <button onclick="insertSym('\\exists ')">∃</button>
-        <button onclick="insertSym('\\neg ')">¬</button>
-        <button onclick="insertSym('\\land ')">∧</button>
-        <button onclick="insertSym('\\lor ')">∨</button>
-        <button onclick="insertSym('\\rightarrow ')">→</button>
-        <button onclick="insertSym('\\leftrightarrow ')">↔</button>
-        <button onclick="insertSym('(')">(</button>
-        <button onclick="insertSym(')')">)</button>
+        <button onclick="inserirSimbolo('\\forall ')">∀</button>
+        <button onclick="inserirSimbolo('\\exists ')">∃</button>
+        <button onclick="inserirSimbolo('\\neg ')">¬</button>
+        <button onclick="inserirSimbolo('\\land ')">∧</button>
+        <button onclick="inserirSimbolo('\\lor ')">∨</button>
+        <button onclick="inserirSimbolo('\\rightarrow ')">→</button>
+        <button onclick="inserirSimbolo('\\leftrightarrow ')">↔</button>
+        <button onclick="inserirSimbolo('(')">(</button>
+        <button onclick="inserirSimbolo(')')">)</button>
       </div>
 
-      <textarea id="input" spellcheck="false" placeholder="Digite a fórmula em LaTeX, por ex: \forall x \exists y \forall z (P(x,z) \rightarrow Q(y))">\forall x \exists y \forall z (P(x,z) \rightarrow Q(y))</textarea>
+      <textarea id="input" spellcheck="false" placeholder="Digite a fórmula em LaTeX, por ex: \forall x (P(x) \rightarrow (\exists y(Q(y)\land R(x,y))))">\forall x (P(x) \rightarrow (\exists y(Q(y)\land R(x,y))))</textarea>
       <div class="row">
-        <button class="primary" onclick="runAll()">Processar</button>
-        <button class="ghost" onclick="clearAll()">Limpar</button>
+        <button class="primary" onclick="executarTudo()">Processar</button>
+        <button class="ghost" onclick="limparTudo()">Limpar</button>
       </div>
 
       <div class="small" style="margin-top:10px">Exemplos rápidos — clique para colocar na caixa</div>
       <div class="examples">
-        <div class="chip" onclick="setExample('\\forall x (P(x) \\rightarrow (\\exists y(Q(y)\\land R(x,y))))')">∀x (P(x) → (∃y(Q(y) ∧ R(x,y))))</div>
-        <div class="chip" onclick="setExample('\\forall x (P(x) \\rightarrow Q(x))')">∀x (P(x) → Q(x))</div>
-        <div class="chip" onclick="setExample('\\exists x (P(x) \\land \\forall y (Q(y) \\rightarrow R(x,y)))')">∃x (P(x) ∧ ∀y (Q(y) → R(x,y)))</div>
-        <div class="chip" onclick="setExample('\\forall x \\exists y \\forall z (P(x,y) \\rightarrow Q(z))')">∀x ∃y ∀z (P(x,y) → Q(z))</div>
-        <div class="chip" onclick="setExample('(P \\leftrightarrow Q)')">P ↔ Q</div>
-        <div class="chip" onclick="setExample('(A \\rightarrow (B \\land C))')">A → (B ∧ C)</div>
-        <div class="chip" onclick="setExample('\\forall x (P(x) \\rightarrow (Q(x) \\lor R(x)))')">∀x (P(x) → (Q(x) ∨ R(x)))</div>
-        <div class="chip" onclick="setExample('\\neg \\forall x (P(x) \\land Q(x))')">¬∀x (P(x) ∧ Q(x))</div>
-        <div class="chip" onclick="setExample('\\exists z (R(z) \\land \\forall w (S(w,z)))')">∃z (R(z) ∧ ∀w (S(w,z)))</div>
+        <div class="chip" onclick="definirExemplo('\\forall x (P(x) \\rightarrow (\\exists y(Q(y)\\land R(x,y))))')">∀x (P(x) → (∃y(Q(y) ∧ R(x,y))))</div>
+        <div class="chip" onclick="definirExemplo('\\forall x (P(x) \\rightarrow Q(x))')">∀x (P(x) → Q(x))</div>
+        <div class="chip" onclick="definirExemplo('\\exists x (P(x) \\land \\forall y (Q(y) \\rightarrow R(x,y)))')">∃x (P(x) ∧ ∀y (Q(y) → R(x,y)))</div>
+        <div class="chip" onclick="definirExemplo('\\forall x \\exists y \\forall z (P(x,y) \\rightarrow Q(z))')">∀x ∃y ∀z (P(x,y) → Q(z))</div>
+        <div class="chip" onclick="definirExemplo('(P \\leftrightarrow Q)')">P ↔ Q</div>
+        <div class="chip" onclick="definirExemplo('(A \\rightarrow (B \\land C))')">A → (B ∧ C)</div>
+        <div class="chip" onclick="definirExemplo('\\forall x (P(x) \\rightarrow (Q(x) \\lor R(x)))')">∀x (P(x) → (Q(x) ∨ R(x)))</div>
+        <div class="chip" onclick="definirExemplo('\\neg \\forall x (P(x) \\land Q(x))')">¬∀x (P(x) ∧ Q(x))</div>
+        <div class="chip" onclick="definirExemplo('\\exists z (R(z) \\land \\forall w (S(w,z)))')">∃z (R(z) ∧ ∀w (S(w,z)))</div>
       </div>
 
       <div style="margin-top:12px">
@@ -66,11 +65,9 @@ window.MathJax = {tex:{inlineMath:[['$','$'],['\\(','\\)']]}, svg:{fontCache:'gl
 
     <div class="right">
       <div class="small">Passo a passo</div>
-
       <div id="stepsContainer"></div>
     </div>
   </div>
-
-<script src="js/script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

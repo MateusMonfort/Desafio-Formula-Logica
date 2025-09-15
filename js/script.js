@@ -1,8 +1,7 @@
-
-function tokenize(s) {
+function tokenizar(s) {
   s = s.replace(/\$/g,' ').trim();
   const tokens = [];
-  const patterns = [
+  const padroes = [
     ["WS", /^\s+/],
     ["FORALL", /^(\\forall|∀)/],
     ["EXISTS", /^(\\exists|∃)/],
@@ -21,12 +20,12 @@ function tokenize(s) {
   let i = 0;
   while (i < s.length) {
     let matched = false;
-    for (const [type, re] of patterns) {
+    for (const [tipo, re] of padroes) {
       const m = s.slice(i).match(re);
       if (m) {
         matched = true;
         const tok = m[0];
-        if (type !== "WS") tokens.push({type, value: tok});
+        if (tipo !== "WS") tokens.push({tipo, valor: tok});
         i += tok.length;
         break;
       }
@@ -36,447 +35,431 @@ function tokenize(s) {
   return tokens;
 }
 
-
-function parse(s) {
-  const tokens = tokenize(s);
+function analisar(s) {
+  const tokens = tokenizar(s);
   let pos = 0;
   
-  function peek() { return tokens[pos] || null; }
-  function consume(type) {
+  function espiar() { return tokens[pos] || null; }
+  function consumir(tipo) {
     const t = tokens[pos];
-    if (t && t.type === type) { pos++; return t; }
+    if (t && t.tipo === tipo) { pos++; return t; }
     return null;
   }
-  function expect(type) {
-    const t = consume(type);
-    if (!t) throw new Error(`Esperado ${type}, encontrado ${peek()?.type || 'fim'}`);
+  function esperar(tipo) {
+    const t = consumir(tipo);
+    if (!t) throw new Error(`Esperado ${tipo}, encontrado ${espiar()?.tipo || 'fim'}`);
     return t;
   }
 
-  function parseFormula() { return parseIff(); }
-  function parseIff() {
-    let left = parseImplies();
-    while (peek() && peek().type === "IFF") {
-      consume("IFF");
-      const right = parseImplies();
-      if (!right) throw new Error('Esperado fórmula após ↔');
-      left = {type:'iff', a:left, b:right};
+  function analisarFormula() { return analisarIff(); }
+  function analisarIff() {
+    let esquerda = analisarImplies();
+    while (espiar() && espiar().tipo === "IFF") {
+      consumir("IFF");
+      const direita = analisarImplies();
+      if (!direita) throw new Error('Esperado fórmula após ↔');
+      esquerda = {tipo:'iff', a:esquerda, b:direita};
     }
-    return left;
+    return esquerda;
   }
-  function parseImplies() {
-    let left = parseOr();
-    while (peek() && peek().type === "IMPLIES") {
-      consume("IMPLIES");
-      const right = parseImplies();
-      if (!right) throw new Error('Esperado fórmula após →');
-      left = {type:'implies', a:left, b:right};
+  function analisarImplies() {
+    let esquerda = analisarOr();
+    while (espiar() && espiar().tipo === "IMPLIES") {
+      consumir("IMPLIES");
+      const direita = analisarImplies();
+      if (!direita) throw new Error('Esperado fórmula após →');
+      esquerda = {tipo:'implies', a:esquerda, b:direita};
     }
-    return left;
+    return esquerda;
   }
-  function parseOr() {
-    let left = parseAnd();
-    while (peek() && peek().type === "OR") {
-      consume("OR");
-      const right = parseAnd();
-      if (!right) throw new Error('Esperado fórmula após ∨');
-      left = {type:'or', a:left, b:right};
+  function analisarOr() {
+    let esquerda = analisarAnd();
+    while (espiar() && espiar().tipo === "OR") {
+      consumir("OR");
+      const direita = analisarAnd();
+      if (!direita) throw new Error('Esperado fórmula após ∨');
+      esquerda = {tipo:'or', a:esquerda, b:direita};
     }
-    return left;
+    return esquerda;
   }
-  function parseAnd() {
-    let left = parseUnary();
-    while (peek() && peek().type === "AND") {
-      consume("AND");
-      const right = parseUnary();
-      if (!right) throw new Error('Esperado fórmula após ∧');
-      left = {type:'and', a:left, b:right};
+  function analisarAnd() {
+    let esquerda = analisarUnary();
+    while (espiar() && espiar().tipo === "AND") {
+      consumir("AND");
+      const direita = analisarUnary();
+      if (!direita) throw new Error('Esperado fórmula após ∧');
+      esquerda = {tipo:'and', a:esquerda, b:direita};
     }
-    return left;
+    return esquerda;
   }
-  function parseUnary() {
-    const t = peek();
+  function analisarUnary() {
+    const t = espiar();
     if (!t) return null;
     
-    if (t.type === "NOT") { 
-      consume("NOT"); 
-      const sub = parseUnary(); 
+    if (t.tipo === "NOT") { 
+      consumir("NOT"); 
+      const sub = analisarUnary(); 
       if (!sub) throw new Error('Esperado fórmula após ¬');
-      return {type:'not', a:sub}; 
+      return {tipo:'not', a:sub}; 
     }
     
-    if (t.type === "FORALL" || t.type === "EXISTS") {
-      const qtype = (t.type === "FORALL") ? 'forall' : 'exists';
-      consume(t.type);
+    if (t.tipo === "FORALL" || t.tipo === "EXISTS") {
+      const qtipo = (t.tipo === "FORALL") ? 'forall' : 'exists';
+      consumir(t.tipo);
       const vars = [];
       
-      while (peek() && peek().type === "IDENT") {
-        vars.push(consume("IDENT").value);
+      while (espiar() && espiar().tipo === "IDENT") {
+        vars.push(consumir("IDENT").valor);
       }
       if (vars.length === 0) {
-        throw new Error(`Esperado variável após ${qtype === 'forall' ? '∀' : '∃'}`);
+        throw new Error(`Esperado variável após ${qtipo === 'forall' ? '∀' : '∃'}`);
       }
       
-      if (peek() && peek().type === "DOT") consume("DOT");
+      if (espiar() && espiar().tipo === "DOT") consumir("DOT");
       
-      const sub = parseUnary();
+      const sub = analisarUnary();
       if (!sub) throw new Error(`Esperado fórmula após quantificador`);
       
       let node = sub;
       for (let i = vars.length-1; i >= 0; i--) {
-        node = {type:qtype, var:vars[i], a: node};
+        node = {tipo:qtipo, var:vars[i], a: node};
       }
       return node;
     }
     
-    if (t.type === "LPAREN") {
-      consume("LPAREN");
-      const f = parseFormula();
+    if (t.tipo === "LPAREN") {
+      consumir("LPAREN");
+      const f = analisarFormula();
       if (!f) throw new Error('Esperado fórmula após (');
-      expect("RPAREN");
+      esperar("RPAREN");
       return f;
     }
     
-    if (t.type === "IDENT") {
-      const name = consume("IDENT").value;
-      if (peek() && peek().type === "LPAREN") {
-        consume("LPAREN");
+    if (t.tipo === "IDENT") {
+      const nome = consumir("IDENT").valor;
+      if (espiar() && espiar().tipo === "LPAREN") {
+        consumir("LPAREN");
         const args = [];
-        while (peek() && peek().type !== "RPAREN") {
-          if (peek().type === "IDENT") {
-            args.push({type:'var', name:consume("IDENT").value});
-          } else if (peek().type === "COMMA") {
-            consume("COMMA");
+        while (espiar() && espiar().tipo !== "RPAREN") {
+          if (espiar().tipo === "IDENT") {
+            args.push({tipo:'var', nome:consumir("IDENT").valor});
+          } else if (espiar().tipo === "COMMA") {
+            consumir("COMMA");
           } else {
-            throw new Error(`Token inesperado em argumentos: ${peek().type}`);
+            throw new Error(`Token inesperado em argumentos: ${espiar().tipo}`);
           }
         }
-        expect("RPAREN");
-        return {type:'pred', name: name, args: args};
+        esperar("RPAREN");
+        return {tipo:'pred', nome: nome, args: args};
       }
-      return {type:'pred', name: name, args: []};
+      return {tipo:'pred', nome: nome, args: []};
     }
     
-    throw new Error(`Token inesperado: ${t.type}`);
+    throw new Error(`Token inesperado: ${t.tipo}`);
   }
 
-  const ast = parseFormula();
+  const ast = analisarFormula();
   if (pos < tokens.length) {
-    throw new Error(`Tokens extras encontrados: ${tokens.slice(pos).map(t => t.value).join(' ')}`);
+    throw new Error(`Tokens extras encontrados: ${tokens.slice(pos).map(t => t.valor).join(' ')}`);
   }
   return ast;
 }
 
+function clonarAst(x){ return JSON.parse(JSON.stringify(x)); }
 
-function cloneAst(x){ return JSON.parse(JSON.stringify(x)); }
-
-
-function astToLatex(a) {
+function astParaLatex(a) {
   if (!a) return '';
-  switch(a.type) {
+  switch(a.tipo) {
     case 'pred':
-      if (!a.args || a.args.length === 0) return a.name;
-      return a.name + '(' + a.args.map(t => termToLatex(t)).join(',') + ')';
-    case 'not': return `\\lnot ${wrap(a.a)}`;
-    case 'and': return `${wrap(a.a)} \\land ${wrap(a.b)}`;
-    case 'or': return `${wrap(a.a)} \\lor ${wrap(a.b)}`;
-    case 'implies': return `${wrap(a.a)} \\rightarrow ${wrap(a.b)}`;
-    case 'iff': return `${wrap(a.a)} \\leftrightarrow ${wrap(a.b)}`;
-    case 'forall': return `\\forall ${a.var} \\, ${astToLatex(a.a)}`;
-    case 'exists': return `\\exists ${a.var} \\, ${astToLatex(a.a)}`;
+      if (!a.args || a.args.length === 0) return a.nome;
+      return a.nome + '(' + a.args.map(t => termoParaLatex(t)).join(',') + ')';
+    case 'not': return `\\lnot ${envolver(a.a)}`;
+    case 'and': return `${envolver(a.a)} \\land ${envolver(a.b)}`;
+    case 'or': return `${envolver(a.a)} \\lor ${envolver(a.b)}`;
+    case 'implies': return `${envolver(a.a)} \\rightarrow ${envolver(a.b)}`;
+    case 'iff': return `${envolver(a.a)} \\leftrightarrow ${envolver(a.b)}`;
+    case 'forall': return `\\forall ${a.var} \\, ${astParaLatex(a.a)}`;
+    case 'exists': return `\\exists ${a.var} \\, ${astParaLatex(a.a)}`;
     case 'func': 
-      if (!a.args || a.args.length === 0) return a.name;
-      return a.name + '(' + a.args.map(t => termToLatex(t)).join(',') + ')';
-    case 'var': return a.name;
+      if (!a.args || a.args.length === 0) return a.nome;
+      return a.nome + '(' + a.args.map(t => termoParaLatex(t)).join(',') + ')';
+    case 'var': return a.nome;
     default: return '\\text{?}';
   }
   
-  function wrap(x) {
+  function envolver(x) {
     if (!x) return '';
-    if (['and','or','implies','iff'].includes(x.type)) {
-      return `(${astToLatex(x)})`;
+    if (['and','or','implies','iff'].includes(x.tipo)) {
+      return `(${astParaLatex(x)})`;
     }
-    return astToLatex(x);
+    return astParaLatex(x);
   }
 }
 
-
-function termToLatex(t) {
+function termoParaLatex(t) {
   if (!t) return '';
-  switch(t.type) {
-    case 'var': return t.name;
+  switch(t.tipo) {
+    case 'var': return t.nome;
     case 'func': 
-      if (!t.args || t.args.length === 0) return t.name;
-      return t.name + '(' + t.args.map(a => termToLatex(a)).join(',') + ')';
-    default: return t.name || '?';
+      if (!t.args || t.args.length === 0) return t.nome;
+      return t.nome + '(' + t.args.map(a => termoParaLatex(a)).join(',') + ')';
+    default: return t.nome || '?';
   }
 }
 
-
-function eliminateImplications(node) {
+function eliminarImplicacoes(node) {
   if (!node) return node;
-  switch(node.type) {
+  switch(node.tipo) {
     case 'implies': {
-      return {type:'or', a: {type:'not', a: eliminateImplications(node.a)}, b: eliminateImplications(node.b)};
+      return {tipo:'or', a: {tipo:'not', a: eliminarImplicacoes(node.a)}, b: eliminarImplicacoes(node.b)};
     }
     case 'iff': {
-      const a1 = {type:'implies', a: node.a, b: node.b};
-      const a2 = {type:'implies', a: node.b, b: node.a};
-      return eliminateImplications({type:'and', a: a1, b: a2});
+      const a1 = {tipo:'implies', a: node.a, b: node.b};
+      const a2 = {tipo:'implies', a: node.b, b: node.a};
+      return eliminarImplicacoes({tipo:'and', a: a1, b: a2});
     }
-    case 'and': return {type:'and', a: eliminateImplications(node.a), b: eliminateImplications(node.b)};
-    case 'or': return {type:'or', a: eliminateImplications(node.a), b: eliminateImplications(node.b)};
-    case 'not': return {type:'not', a: eliminateImplications(node.a)};
-    case 'forall': return {type:'forall', var: node.var, a: eliminateImplications(node.a)};
-    case 'exists': return {type:'exists', var: node.var, a: eliminateImplications(node.a)};
-    default: return cloneAst(node);
+    case 'and': return {tipo:'and', a: eliminarImplicacoes(node.a), b: eliminarImplicacoes(node.b)};
+    case 'or': return {tipo:'or', a: eliminarImplicacoes(node.a), b: eliminarImplicacoes(node.b)};
+    case 'not': return {tipo:'not', a: eliminarImplicacoes(node.a)};
+    case 'forall': return {tipo:'forall', var: node.var, a: eliminarImplicacoes(node.a)};
+    case 'exists': return {tipo:'exists', var: node.var, a: eliminarImplicacoes(node.a)};
+    default: return clonarAst(node);
   }
 }
 
-
-function toNNF(node) {
+function paraNNF(node) {
   if (!node) return node;
   function nnf(n, neg) {
     if (!n) return null;
-    if (n.type === 'not') return nnf(n.a, !neg);
-    if (n.type === 'and' || n.type === 'or') {
-      const left = nnf(n.a, neg);
-      const right = nnf(n.b, neg);
+    if (n.tipo === 'not') return nnf(n.a, !neg);
+    if (n.tipo === 'and' || n.tipo === 'or') {
+      const esquerda = nnf(n.a, neg);
+      const direita = nnf(n.b, neg);
       if (neg) {
-        if (n.type === 'and') return {type:'or', a:left, b:right};
-        if (n.type === 'or') return {type:'and', a:left, b:right};
+        if (n.tipo === 'and') return {tipo:'or', a:esquerda, b:direita};
+        if (n.tipo === 'or') return {tipo:'and', a:esquerda, b:direita};
       } else {
-        return {type:n.type, a:left, b:right};
+        return {tipo:n.tipo, a:esquerda, b:direita};
       }
     }
-    if (n.type === 'forall' || n.type === 'exists') {
+    if (n.tipo === 'forall' || n.tipo === 'exists') {
       if (neg) {
-        const sw = (n.type === 'forall') ? 'exists' : 'forall';
-        return {type: sw, var: n.var, a: nnf(n.a, true)};
+        const sw = (n.tipo === 'forall') ? 'exists' : 'forall';
+        return {tipo: sw, var: n.var, a: nnf(n.a, true)};
       } else {
-        return {type: n.type, var:n.var, a: nnf(n.a, false)};
+        return {tipo: n.tipo, var:n.var, a: nnf(n.a, false)};
       }
     }
-    if (neg) return {type:'not', a: cloneAst(n)};
-    return cloneAst(n);
+    if (neg) return {tipo:'not', a: clonarAst(n)};
+    return clonarAst(n);
   }
   return nnf(node, false);
 }
 
+let skContador = 0, renomearContador = 0;
+function novoSk(prefixo='sk') { skContador++; return prefixo + skContador; }
+function novaVar(prefixo='v') { renomearContador++; return prefixo + renomearContador; }
 
-let skCounter = 0, renameCounter = 0;
-function freshSk(prefix='sk') { skCounter++; return prefix + skCounter; }
-function freshVar(prefix='v') { renameCounter++; return prefix + renameCounter; }
-
-
-function substitute(node, varName, replacement) {
+function substituir(node, nomeVar, substituto) {
   if (!node) return node;
-  switch(node.type) {
+  switch(node.tipo) {
     case 'pred':
-      return {type:'pred', name:node.name, args: node.args.map(t => {
-        if (t.type === 'var') {
-          return (t.name === varName) ? replacement : t;
+      return {tipo:'pred', nome:node.nome, args: node.args.map(t => {
+        if (t.tipo === 'var') {
+          return (t.nome === nomeVar) ? substituto : t;
         }
         return t;
       })};
     case 'forall':
     case 'exists':
-      if (node.var === varName) return cloneAst(node);
-      return {type:node.type, var: node.var, a: substitute(node.a, varName, replacement)};
+      if (node.var === nomeVar) return clonarAst(node);
+      return {tipo:node.tipo, var: node.var, a: substituir(node.a, nomeVar, substituto)};
     case 'and':
-    case 'or': return {type:node.type, a: substitute(node.a, varName, replacement), b: substitute(node.b, varName, replacement)};
-    case 'not': return {type:'not', a: substitute(node.a, varName, replacement)};
-    default: return cloneAst(node);
+    case 'or': return {tipo:node.tipo, a: substituir(node.a, nomeVar, substituto), b: substituir(node.b, nomeVar, substituto)};
+    case 'not': return {tipo:'not', a: substituir(node.a, nomeVar, substituto)};
+    default: return clonarAst(node);
   }
 }
 
-
-function renameBoundVars(node) {
+function renomearVariaveisLigadas(node) {
   if (!node) return node;
-  switch(node.type) {
+  switch(node.tipo) {
     case 'forall':
     case 'exists': {
-      const old = node.var;
-      const nv = freshVar(old + '_');
-      const subtree = substitute(node.a, old, {type:'var', name:nv});
-      const renamedChild = renameBoundVars(subtree);
-      return {type: node.type, var: nv, a: renamedChild};
+      const antigo = node.var;
+      const nv = novaVar(antigo + '_');
+      const subarvore = substituir(node.a, antigo, {tipo:'var', nome:nv});
+      const filhoRenomeado = renomearVariaveisLigadas(subarvore);
+      return {tipo: node.tipo, var: nv, a: filhoRenomeado};
     }
     case 'and':
     case 'or':
-      return {type: node.type, a: renameBoundVars(node.a), b: renameBoundVars(node.b)};
+      return {tipo: node.tipo, a: renomearVariaveisLigadas(node.a), b: renomearVariaveisLigadas(node.b)};
     case 'not':
-      return {type:'not', a: renameBoundVars(node.a)};
+      return {tipo:'not', a: renomearVariaveisLigadas(node.a)};
     default:
-      return cloneAst(node);
+      return clonarAst(node);
   }
 }
 
-
-function pullQuantifiers(node) {
-  if (!node) return {quantifiers:[], matrix:null};
-  if (node.type === 'forall' || node.type === 'exists') {
-    const inner = pullQuantifiers(node.a);
-    return {quantifiers: [{type: node.type, var: node.var}, ...inner.quantifiers], matrix: inner.matrix};
+function puxarQuantificadores(node) {
+  if (!node) return {quantificadores:[], matriz:null};
+  if (node.tipo === 'forall' || node.tipo === 'exists') {
+    const interno = puxarQuantificadores(node.a);
+    return {quantificadores: [{tipo: node.tipo, var: node.var}, ...interno.quantificadores], matriz: interno.matriz};
   }
-  if (node.type === 'and' || node.type === 'or') {
-    const L = pullQuantifiers(node.a);
-    const R = pullQuantifiers(node.b);
-    const qs = [...L.quantifiers, ...R.quantifiers];
-    const mat = {type: node.type, a: L.matrix, b: R.matrix};
-    return {quantifiers: qs, matrix: mat};
+  if (node.tipo === 'and' || node.tipo === 'or') {
+    const E = puxarQuantificadores(node.a);
+    const D = puxarQuantificadores(node.b);
+    const qs = [...E.quantificadores, ...D.quantificadores];
+    const mat = {tipo: node.tipo, a: E.matriz, b: D.matriz};
+    return {quantificadores: qs, matriz: mat};
   }
-  if (node.type === 'not') {
-    const P = pullQuantifiers(node.a);
-    return {quantifiers: P.quantifiers, matrix: {type:'not', a: P.matrix}};
+  if (node.tipo === 'not') {
+    const P = puxarQuantificadores(node.a);
+    return {quantificadores: P.quantificadores, matriz: {tipo:'not', a: P.matriz}};
   }
-  return {quantifiers: [], matrix: cloneAst(node)};
+  return {quantificadores: [], matriz: clonarAst(node)};
 }
 
-function buildPrenex(quantifiers, matrix) {
-  let node = cloneAst(matrix);
-  for (let i = quantifiers.length-1;i>=0;--i) node = {type: quantifiers[i].type, var: quantifiers[i].var, a: node};
+function construirPrenex(quantificadores, matriz) {
+  let node = clonarAst(matriz);
+  for (let i = quantificadores.length-1;i>=0;--i) node = {tipo: quantificadores[i].tipo, var: quantificadores[i].var, a: node};
   return node;
 }
 
-
-function skolemize(prenexNode) {
+function skolemizar(nodePrenex) {
   const qlist = [];
-  let cur = prenexNode;
-  while (cur && (cur.type === 'forall' || cur.type === 'exists')) {
-    qlist.push({type:cur.type, var: cur.var});
+  let cur = nodePrenex;
+  while (cur && (cur.tipo === 'forall' || cur.tipo === 'exists')) {
+    qlist.push({tipo:cur.tipo, var: cur.var});
     cur = cur.a;
   }
-  let matrix = cur;
-  const universalPrefix = [];
+  let matriz = cur;
+  const prefixoUniversal = [];
   const subs = {};
   for (const q of qlist) {
-    if (q.type === 'forall') universalPrefix.push(q.var);
+    if (q.tipo === 'forall') prefixoUniversal.push(q.var);
     else {
-      if (universalPrefix.length === 0) {
-        const c = freshSk('c');
-        subs[q.var] = {type:'func', name:c, args: []};
+      if (prefixoUniversal.length === 0) {
+        const c = novoSk('c');
+        subs[q.var] = {tipo:'func', nome:c, args: []};
       } else {
-        const fname = freshSk('f');
-        subs[q.var] = {type:'func', name: fname, args: universalPrefix.map(v=>({type:'var', name:v}))};
+        const fname = novoSk('f');
+        subs[q.var] = {tipo:'func', nome: fname, args: prefixoUniversal.map(v=>({tipo:'var', nome:v}))};
       }
     }
   }
-  function applySubs(node) {
+  function aplicarSubs(node) {
     if (!node) return node;
-    switch(node.type) {
+    switch(node.tipo) {
       case 'pred':
-        return {type:'pred', name:node.name, args: node.args.map(t => applyTerm(t))};
+        return {tipo:'pred', nome:node.nome, args: node.args.map(t => aplicarTermo(t))};
       case 'and':
       case 'or':
-        return {type: node.type, a: applySubs(node.a), b: applySubs(node.b)};
+        return {tipo: node.tipo, a: aplicarSubs(node.a), b: aplicarSubs(node.b)};
       case 'not':
-        return {type:'not', a: applySubs(node.a)};
+        return {tipo:'not', a: aplicarSubs(node.a)};
       default:
-        return cloneAst(node);
+        return clonarAst(node);
     }
   }
-  function applyTerm(t) {
+  function aplicarTermo(t) {
     if (!t) return t;
-    if (t.type === 'var') {
-      if (subs[t.name]) return subs[t.name];
+    if (t.tipo === 'var') {
+      if (subs[t.nome]) return subs[t.nome];
       return t;
     }
-    if (t.type === 'func') return {type:'func', name:t.name, args: t.args.map(a=>applyTerm(a))};
+    if (t.tipo === 'func') return {tipo:'func', nome:t.nome, args: t.args.map(a=>aplicarTermo(a))};
     return t;
   }
-  const newMatrix = applySubs(matrix);
-  return newMatrix;
+  const novaMatriz = aplicarSubs(matriz);
+  return novaMatriz;
 }
 
-
-function toCNF(node) {
+function paraCNF(node) {
   if (!node) return node;
-  if (node.type === 'and') return {type:'and', a: toCNF(node.a), b: toCNF(node.b)};
-  if (node.type === 'or') {
-    const A = toCNF(node.a);
-    const B = toCNF(node.b);
-    if (A.type === 'and') {
-      return toCNF({type:'and', a: {type:'or', a:A.a, b:B}, b: {type:'or', a:A.b, b:B}});
+  if (node.tipo === 'and') return {tipo:'and', a: paraCNF(node.a), b: paraCNF(node.b)};
+  if (node.tipo === 'or') {
+    const A = paraCNF(node.a);
+    const B = paraCNF(node.b);
+    if (A.tipo === 'and') {
+      return paraCNF({tipo:'and', a: {tipo:'or', a:A.a, b:B}, b: {tipo:'or', a:A.b, b:B}});
     }
-    if (B.type === 'and') {
-      return toCNF({type:'and', a: {type:'or', a:A, b:B.a}, b: {type:'or', a:A, b: B.b}});
+    if (B.tipo === 'and') {
+      return paraCNF({tipo:'and', a: {tipo:'or', a:A, b:B.a}, b: {tipo:'or', a:A, b: B.b}});
     }
-    return {type:'or', a:A, b:B};
+    return {tipo:'or', a:A, b:B};
   }
-  if (node.type === 'not') return {type:'not', a: toCNF(node.a)};
-  return cloneAst(node);
+  if (node.tipo === 'not') return {tipo:'not', a: paraCNF(node.a)};
+  return clonarAst(node);
 }
 
-
-function toDNF(node) {
+function paraDNF(node) {
   if (!node) return node;
-  if (node.type === 'or') return {type:'or', a: toDNF(node.a), b: toDNF(node.b)};
-  if (node.type === 'and') {
-    const A = toDNF(node.a);
-    const B = toDNF(node.b);
-    if (A.type === 'or') {
-      return toDNF({type:'or', a:{type:'and', a:A.a, b:B}, b:{type:'and', a:A.b, b:B}});
+  if (node.tipo === 'or') return {tipo:'or', a: paraDNF(node.a), b: paraDNF(node.b)};
+  if (node.tipo === 'and') {
+    const A = paraDNF(node.a);
+    const B = paraDNF(node.b);
+    if (A.tipo === 'or') {
+      return paraDNF({tipo:'or', a:{tipo:'and', a:A.a, b:B}, b:{tipo:'and', a:A.b, b:B}});
     }
-    if (B.type === 'or') {
-      return toDNF({type:'or', a:{type:'and', a:A, b:B.a}, b:{type:'and', a:A, b:B.b}});
+    if (B.tipo === 'or') {
+      return paraDNF({tipo:'or', a:{tipo:'and', a:A, b:B.a}, b:{tipo:'and', a:A, b:B.b}});
     }
-    return {type:'and', a:A, b:B};
+    return {tipo:'and', a:A, b:B};
   }
-  if (node.type === 'not') return {type:'not', a: toDNF(node.a)};
-  return cloneAst(node);
+  if (node.tipo === 'not') return {tipo:'not', a: paraDNF(node.a)};
+  return clonarAst(node);
 }
 
-
-function extractClausesFromCNF(node) {
-  const clauses = [];
-  function collectConj(n, out) {
+function extrairClausulasCNF(node) {
+  const clausulas = [];
+  function coletarConj(n, out) {
     if (!n) return;
-    if (n.type === 'and') { 
-      collectConj(n.a, out); 
-      collectConj(n.b, out); 
+    if (n.tipo === 'and') { 
+      coletarConj(n.a, out); 
+      coletarConj(n.b, out); 
       return; 
     }
     out.push(n);
   }
   
   const conj = [];
-  collectConj(node, conj);
+  coletarConj(node, conj);
   
   for (const c of conj) {
     const lits = [];
-    function collectDisj(n, arr) {
+    function coletarDisj(n, arr) {
       if (!n) return;
-      if (n.type === 'or') { 
-        collectDisj(n.a, arr); 
-        collectDisj(n.b, arr); 
+      if (n.tipo === 'or') { 
+        coletarDisj(n.a, arr); 
+        coletarDisj(n.b, arr); 
         return; 
       }
-      if (n.type === 'not') {
+      if (n.tipo === 'not') {
         arr.push({pos: false, lit: n.a});
       } else {
         arr.push({pos: true, lit: n});
       }
     }
-    collectDisj(c, lits);
-    clauses.push(lits);
+    coletarDisj(c, lits);
+    clausulas.push(lits);
   }
-  return clauses;
+  return clausulas;
 }
 
-
-function isHornClause(clause) {
+function ehClausulaHorn(clausula) {
   let pos = 0;
-  for (const l of clause) {
+  for (const l of clausula) {
     if (l.pos) pos++;
   }
   return pos <= 1;
 }
 
-
-function classifyHornClause(clause) {
-  const posCount = clause.filter(l => l.pos).length;
-  const negCount = clause.filter(l => !l.pos).length;
+function classificarClausulaHorn(clausula) {
+  const posCount = clausula.filter(l => l.pos).length;
+  const negCount = clausula.filter(l => !l.pos).length;
   
   if (posCount === 0) return 'goal';
   if (posCount === 1 && negCount === 0) return 'fact';
@@ -484,19 +467,17 @@ function classifyHornClause(clause) {
   return 'not-horn';
 }
 
-
-function clauseToLatex(clause) {
-  if (!clause || clause.length === 0) return '\\text{cláusula vazia}';
-  return clause.map(l => {
-    const s = astToLatex(l.lit);
+function clausulaParaLatex(clausula) {
+  if (!clausula || clausula.length === 0) return '\\text{cláusula vazia}';
+  return clausula.map(l => {
+    const s = astParaLatex(l.lit);
     return l.pos ? s : `\\lnot ${s}`;
   }).join(' \\lor ');
 }
 
-
-function clausesToLatex(clauses) {
-  if (!clauses || clauses.length === 0) return '\\text{conjunto vazio}';
-  return clauses.map(c => `(${clauseToLatex(c)})`).join(' \\land ');
+function clausulasParaLatex(clausulas) {
+  if (!clausulas || clausulas.length === 0) return '\\text{conjunto vazio}';
+  return clausulas.map(c => `(${clausulaParaLatex(c)})`).join(' \\land ');
 }
 
 
@@ -505,7 +486,7 @@ const inputEl = document.getElementById('input');
 const renderInput = document.getElementById('renderInput');
 const stepsContainer = document.getElementById('stepsContainer');
 
-function insertSym(s) {
+function inserirSimbolo(s) {
   const el = inputEl;
   const start = el.selectionStart;
   const end = el.selectionEnd;
@@ -515,132 +496,117 @@ function insertSym(s) {
   el.selectionStart = el.selectionEnd = start + s.length;
 }
 
-function setExample(s) {
+function definirExemplo(s) {
   inputEl.value = s;
-  updateRenderInput();
+  atualizarRenderInput();
 }
 
-function clearAll() {
+function limparTudo() {
   inputEl.value = '';
   renderInput.innerHTML = '';
   stepsContainer.innerHTML = '';
   MathJax.typesetPromise();
 }
 
-function updateRenderInput() {
+function atualizarRenderInput() {
   const raw = inputEl.value.trim();
   if (!raw) { renderInput.innerHTML = '—'; MathJax.typesetPromise(); return; }
   renderInput.innerHTML = '$$' + raw + '$$';
   MathJax.typesetPromise();
 }
 
-
-function addStep(title, latex) {
+function adicionarPasso(titulo, latex) {
   const div = document.createElement('div');
   div.className = 'step';
-  div.innerHTML = `<div class="title">${title}</div><div style="font-size:18px">\\(${latex}\\)</div>`;
+  div.innerHTML = `<div class="title">${titulo}</div><div style="font-size:18px">\\(${latex}\\)</div>`;
   stepsContainer.appendChild(div);
 }
 
-
-function runAll() {
+function executarTudo() {
   stepsContainer.innerHTML = '';
-  skCounter = 0; renameCounter = 0;
+  skContador = 0; renomearContador = 0;
   const raw = inputEl.value.trim();
   if (!raw) { 
     alert('Digite uma fórmula LaTeX primeiro.'); 
     return; 
   }
   
-
   renderInput.innerHTML = '$$' + raw + '$$';
   MathJax.typesetPromise();
 
-
   let ast;
   try {
-    ast = parse(raw);
+    ast = analisar(raw);
     if (!ast) throw new Error('Parser retornou vazio — verifique sintaxe.');
   } catch (e) {
-    addStep('Erro no parser', `\\text{${e.message || 'Entrada inválida'}}`);
+    adicionarPasso('Erro no parser', `\\text{${e.message || 'Entrada inválida'}}`);
     console.error(e);
     return;
   }
 
   try {
+    adicionarPasso('Fórmula original', astParaLatex(ast));
 
-    addStep('Fórmula original', astToLatex(ast));
+    const semImp = eliminarImplicacoes(ast);
+    adicionarPasso('Eliminar → e ↔ (implicações/equivalências)', astParaLatex(semImp));
 
+    const nnf = paraNNF(semImp);
+    adicionarPasso('NNF — Forma Normal Negativa (negações internas)', astParaLatex(nnf));
 
-    const noImp = eliminateImplications(ast);
-    addStep('Eliminar → e ↔ (implicações/equivalências)', astToLatex(noImp));
+    const renomeado = renomearVariaveisLigadas(nnf);
+    adicionarPasso('Renomear variáveis ligadas (alpha-conversion)', astParaLatex(renomeado));
 
+    const puxado = puxarQuantificadores(renomeado);
+    const prenex = construirPrenex(puxado.quantificadores, puxado.matriz);
+    adicionarPasso('Forma Prenex (quantificadores na frente)', astParaLatex(prenex));
 
-    const nnf = toNNF(noImp);
-    addStep('NNF — Forma Normal Negativa (negações internas)', astToLatex(nnf));
+    const skolemizado = skolemizar(prenex);
+    adicionarPasso('Skolemização (remover ∃ por funções/constantes)', astParaLatex(skolemizado));
 
+    const cnf = paraCNF(skolemizado);
+    adicionarPasso('CNF — Forma Normal Conjuntiva', astParaLatex(cnf));
 
-    const renamed = renameBoundVars(nnf);
-    addStep('Renomear variáveis ligadas (alpha-conversion)', astToLatex(renamed));
+    const clausulas = extrairClausulasCNF(cnf);
+    const clausulasLatex = clausulasParaLatex(clausulas);
+    adicionarPasso('Forma Cláusal (conjunto de cláusulas)', clausulasLatex);
 
-
-    const pulled = pullQuantifiers(renamed);
-    const prenex = buildPrenex(pulled.quantifiers, pulled.matrix);
-    addStep('Forma Prenex (quantificadores na frente)', astToLatex(prenex));
-
-
-    const skolemized = skolemize(prenex);
-    addStep('Skolemização (remover ∃ por funções/constantes)', astToLatex(skolemized));
-
-
-    const cnf = toCNF(skolemized);
-    addStep('CNF — Forma Normal Conjuntiva', astToLatex(cnf));
-
-
-    const clauses = extractClausesFromCNF(cnf);
-    const clauseLatex = clausesToLatex(clauses);
-    addStep('Forma Cláusal (conjunto de cláusulas)', clauseLatex);
-
-
-    if (clauses.length > 0) {
-      let hornAnalysis = [];
-      let allHorn = true;
+    if (clausulas.length > 0) {
+      let analiseHorn = [];
+      let todasHorn = true;
       
-      clauses.forEach((clause, i) => {
-        const isHorn = isHornClause(clause);
-        const type = classifyHornClause(clause);
-        if (!isHorn) allHorn = false;
+      clausulas.forEach((clausula, i) => {
+        const ehHorn = ehClausulaHorn(clausula);
+        const tipo = classificarClausulaHorn(clausula);
+        if (!ehHorn) todasHorn = false;
         
-        let typeDesc = '';
-        switch(type) {
-          case 'fact': typeDesc = 'Fato'; break;
-          case 'rule': typeDesc = 'Regra'; break;
-          case 'goal': typeDesc = 'Goal'; break;
-          default: typeDesc = 'Não-Horn';
+        let tipoDesc = '';
+        switch(tipo) {
+          case 'fact': tipoDesc = 'Fato'; break;
+          case 'rule': tipoDesc = 'Regra'; break;
+          case 'goal': tipoDesc = 'Goal'; break;
+          default: tipoDesc = 'Não-Horn';
         }
         
-        hornAnalysis.push(`C_{${i+1}}: (${clauseToLatex(clause)}) \\rightarrow \\text{${typeDesc}}`);
+        analiseHorn.push(`C_{${i+1}}: (${clausulaParaLatex(clausula)}) \\rightarrow \\text{${tipoDesc}}`);
       });
       
-      const hornLatex = hornAnalysis.join('\\\\');
-      addStep('Análise de cláusulas de Horn', hornLatex);
-      
+      const hornLatex = analiseHorn.join('\\\\');
+      adicionarPasso('Análise de cláusulas de Horn', hornLatex);
 
-      const summary = allHorn ? 
+      const resumo = todasHorn ? 
         '\\text{Todas as cláusulas são de Horn}' :
         '\\text{Nem todas as cláusulas são de Horn}';
-      addStep('Resumo Horn', summary);
+      adicionarPasso('Resumo Horn', resumo);
       
     } else {
-      addStep('Análise de cláusulas de Horn', '\\text{Nenhuma cláusula encontrada}');
+      adicionarPasso('Análise de cláusulas de Horn', '\\text{Nenhuma cláusula encontrada}');
     }
 
-
-    const dnf = toDNF(skolemized);
-    addStep('DNF — Forma Normal Disjuntiva (comparação)', astToLatex(dnf));
+    const dnf = paraDNF(skolemizado);
+    adicionarPasso('DNF — Forma Normal Disjuntiva (comparação)', astParaLatex(dnf));
 
   } catch (e) {
-    addStep('Erro durante transformação', `\\text{${e.message || 'Erro inesperado'}}`);
+    adicionarPasso('Erro durante transformação', `\\text{${e.message || 'Erro inesperado'}}`);
     console.error(e);
   }
 
