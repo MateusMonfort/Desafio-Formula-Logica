@@ -49,17 +49,6 @@ Acesse diretamente pelo navegador:
 - **Variáveis:** qualquer letra (a-z, A-Z)
 - **Parênteses:** para agrupamento
 
-## Estrutura do projeto
-
-```
-site/
-├── index.html
-├── js/
-│   └── script.js
-├── css/
-│   └── styles.css
-```
-
 ## Tecnologias
 
 - HTML5
