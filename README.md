@@ -24,7 +24,7 @@ Uma aplicação web acadêmica para manipulação e transformação de fórmulas
 
 Acesse diretamente pelo navegador:
 
-[https://mateusmonfort.github.io/Desafio-Formula-Logica/](https://mateusmonfort.github.io/Desafio-Formula-Logica/)
+[Desafio-Formula-Logica](https://mateusmonfort.github.io/Desafio-Formula-Logica/)
 
 1. **Digite ou selecione uma fórmula lógica.**
 2. **Clique em "Processar" para ver as transformações.**
